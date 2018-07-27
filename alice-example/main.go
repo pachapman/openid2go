@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/emanoelxavier/openid2go/openid"
+	"github.com/pachapman/openid2go/openid"
 	"github.com/gorilla/context"
 	"github.com/justinas/alice"
 )

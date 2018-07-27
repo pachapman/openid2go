@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/julienschmidt/httprouter"
 )
 
 // The Configuration contains the entities needed to perform ID token validation.
@@ -93,6 +94,19 @@ func Authenticate(conf *Configuration, h http.Handler) http.Handler {
 	})
 }
 
+// Authenticate middleware performs the validation of the OIDC ID Token.
+// If an error happens, i.e.: expired token, the next handler may or may not execute depending on the
+// provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
+// stops the execution and returns Unauthorized.
+// If the validation is successful then the next handler(h) will be executed.
+func AuthenticateWithParams(conf *Configuration, h httprouter.Handle) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		if _, halt := authenticate(conf, w, r); !halt {
+			h(w, r, params)
+		}
+	})
+}
+
 // AuthenticateUser middleware performs the validation of the OIDC ID Token and
 // forwards the authenticated user's information to the next handler in the pipeline.
 // If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
@@ -103,7 +117,22 @@ func Authenticate(conf *Configuration, h http.Handler) http.Handler {
 func AuthenticateUser(conf *Configuration, h UserHandler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if u, halt := authenticateUser(conf, w, r); !halt {
-			h.ServeHTTPWithUser(u, w, r)
+			h(u, w, r)
+		}
+	})
+}
+
+// AuthenticateUser middleware performs the validation of the OIDC ID Token and
+// forwards the authenticated user's information to the next handler in the pipeline.
+// If an error happens, i.e.: expired token, the next handler may or may not executed depending on the
+// provided ErrorHandlerFunc option. The default behavior, determined by validationErrorToHTTPStatus,
+// stops the execution and returns Unauthorized.
+// If the validation is successful then the next handler(h) will be executed and will
+// receive the authenticated user information.
+func AuthenticateUserWithParams(conf *Configuration, h UserHandlerWithParams) httprouter.Handle {
+	return httprouter.Handle(func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+		if u, halt := authenticateUser(conf, w, r); !halt {
+			h(u, w, r, params)
 		}
 	})
 }
