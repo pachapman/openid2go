@@ -36,7 +36,7 @@ type providers []Provider
 func NewProvider(issuer string, clientIDs []string) (Provider, error) {
 	p := Provider{issuer, clientIDs}
 
-	if err := p.validate(); err != nil {
+	if err := p.Validate(); err != nil {
 		return Provider{}, err
 	}
 
@@ -60,7 +60,7 @@ func (ps providers) validate() error {
 	return nil
 }
 
-func (p Provider) validate() error {
+func (p Provider) Validate() error {
 	if err := validateProviderIssuer(p.Issuer); err != nil {
 		return err
 	}
